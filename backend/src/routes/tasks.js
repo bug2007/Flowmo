@@ -102,7 +102,7 @@ router.get('/stats/combined', async (req, res) => {
 // Create a new task (saves to DB, doesnt queue yet)
 router.post('/', async (req, res) => { 
   try {
-    const { workflow_id, task_type, task_name, config, max_retries, priority, scheduled_for } = req.body;
+    const { workflow_id, task_type, task_name, config, max_retries, priority, scheduled_for, step_order } = req.body;
     
     // Validate required fields
     if (!task_type || !task_name || !config) {
@@ -129,10 +129,10 @@ router.post('/', async (req, res) => {
     
     // Insert task with 'pending' status
     const result = await pool.query(
-      `INSERT INTO tasks (workflow_id, user_id, task_type, task_name, config, max_retries, status, priority, scheduled_for)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO tasks (workflow_id, user_id, task_type, task_name, config, max_retries, status, priority, scheduled_for, step_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [workflow_id || null, req.user.userId, task_type, task_name, config, max_retries || 3, 'pending', priority || 10, scheduled_for]
+      [workflow_id || null, req.user.userId, task_type, task_name, config, max_retries || 3, 'pending', priority || 10, scheduled_for, step_order]
     );
     
     res.status(201).json({ 
@@ -210,7 +210,7 @@ router.post('/:id/execute', async (req, res) => {
       config: task.config,
       workflow_id: task.workflow_id,
       priority: task.priority,
-      scheduled_for: task.scheduled_for,
+      scheduled_for: task.scheduled_for ? new Date(task.scheduled_for).toISOString() : null,
     });
     
     res.json({ 
@@ -260,7 +260,7 @@ router.post('/:id/retry', async (req, res) => {
       config: task.config,
       workflow_id: task.workflow_id,
       priority: task.priority,
-      scheduled_for: task.scheduled_for,
+      scheduled_for: task.scheduled_for ? new Date(task.scheduled_for).toISOString() : null,
     });
     
     res.json({ message: 'Task re-queued for retry', taskId: id });

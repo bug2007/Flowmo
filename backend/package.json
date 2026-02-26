@@ -5,12 +5,18 @@
   "main": "index.js",
   "scripts": {
     "devStart": "nodemon server.js",
-    "worker": "nodemon src/worker.js"
+    "worker": "nodemon src/worker.js",
+    "workers": "node workerManager.js",
+    "workers:3": "node workerManager.js 3",
+    "workers:5": "node workerManager.js 5",
+    "test:workers": "node test-multiple-workers.js",
+    "autoscale": "node autoScaler.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
     "archiver": "^7.0.1",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
@@ -19,7 +25,9 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "ioredis": "^5.9.2",
+    "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
     "nodemailer": "^7.0.12",
     "pg": "^8.17.1",
     "unzipper": "^0.12.3"
@@ -28,5 +36,3 @@
     "nodemon": "^3.1.11"
   }
 }
-
-

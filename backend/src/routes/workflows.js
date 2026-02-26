@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const workflowExecutor = require('../workflowExecutor');
 const authenticateToken = require('../middleware/auth');
 
 // ALL ROUTES HERE REQUIRE AUTHENTICATION 
@@ -92,6 +93,24 @@ router.delete('/:id', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Execute a workflow (runs all tasks in sequence)
+router.post('/:id/execute', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    
+    const result = await workflowExecutor.executeWorkflow(id, userId);
+    
+    res.json({
+      message: 'Workflow execution started',
+      workflow: result
+    });
+  } catch (error) {
+    console.error('Error executing workflow:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

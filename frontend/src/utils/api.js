@@ -63,6 +63,16 @@ export const api = {
     return response.json();
   },
 
+  executeWorkflow: async (token, id) => {
+    const response = await fetch(`${API_URL}/workflows/${id}/execute`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.json();
+  },
+
   // Tasks endpoints
   getTasks: async (token) => {
     const response = await fetch(`${API_URL}/tasks`, {

@@ -6,7 +6,8 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';  
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks'; 
-import ProtectedRoute from './components/ProtectedRoute';  
+import ProtectedRoute from './components/ProtectedRoute'; 
+import WorkflowDetail from './pages/WorkflowDetail'; 
 
 import './App.css'
 
@@ -36,6 +37,9 @@ function App() {
             </ProtectedRoute>
           } 
         />
+
+        <Route path="/workflows/:id" 
+        element={<ProtectedRoute><WorkflowDetail /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
 

@@ -41,3 +41,29 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status); -- Used by workers
 CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
 CREATE INDEX IF NOT EXISTS idx_tasks_scheduled ON tasks(scheduled_for);
 
+
+-- Add execution tracking to workflows table
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'draft',
+ADD COLUMN IF NOT EXISTS started_at TIMESTAMP,
+ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+
+-- Add step_order to tasks. Each task inside a workflow gets a number: step_order = 1 --> first task, step_order = 2 ---> second task
+ALTER TABLE tasks
+ADD COLUMN IF NOT EXISTS step_order INTEGER;
+
+CREATE INDEX IF NOT EXISTS idx_tasks_step_order ON tasks(workflow_id, step_order);
+
+
+-- Add worker tracking columns 
+ALTER TABLE tasks 
+ADD COLUMN IF NOT EXISTS worker_id VARCHAR(50);
+
+-- Create index for faster worker queries
+CREATE INDEX IF NOT EXISTS idx_tasks_worker_id ON tasks(worker_id);
+
+-- Add comments
+COMMENT ON COLUMN tasks.worker_id IS 'ID of the worker that processed this task (e.g., worker-12345)'; -- documentation of tables. 
+
+ALTER TABLE tasks 
+ALTER COLUMN scheduled_for TYPE TIMESTAMP WITH TIME ZONE;

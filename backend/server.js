@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -5,6 +6,8 @@ const pool = require('./src/db');
 const authRoutes = require('./src/routes/auth');
 const workflowRoutes = require('./src/routes/workflows');  
 const taskRoutes = require('./src/routes/tasks');
+const uploadRoutes = require('./src/routes/upload');
+const workersRoutes = require('./src/routes/workers')
 const authenticateToken = require('./src/middleware/auth');  
 
 app.use(cors());
@@ -14,6 +17,8 @@ app.use(express.json()); // middleware to parse JSON bodies. Think of middleware
 app.use('/api/auth', authRoutes);  // in auth.js, u have router.post('/signup'), so the full path becomes /api/auth/signup)
 app.use('/api/workflows', workflowRoutes);  
 app.use('/api/tasks', taskRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/workers', workersRoutes);
 
 // // Protected test route (requires login -> gonna authenticate using authentication middleware using jwt.verify())
 // app.get('/api/protected', authenticateToken, (req, res) => {

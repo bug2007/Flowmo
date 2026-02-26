@@ -14,7 +14,7 @@ const getToken = async () => {
 };
 
 const testCreateWorkflow = async (token) => {
-  console.log('\n=== Test 1: Create a workflow ===');
+  console.log('\n=== Test 1: Create a workflow');
   const response = await fetch('http://localhost:4000/api/workflows', {
     method: 'POST',
     headers: { 
@@ -32,7 +32,7 @@ const testCreateWorkflow = async (token) => {
 };
 
 const testGetAllWorkflows = async (token) => {
-  console.log('\n=== Test 2: Get all workflows ===');
+  console.log('\n=== Test 2: Get all workflows');
   const response = await fetch('http://localhost:4000/api/workflows', {
     headers: { 
       'Authorization': `Bearer ${token}`
@@ -44,7 +44,7 @@ const testGetAllWorkflows = async (token) => {
 };
 
 const testGetWorkflowById = async (token, workflowId) => {
-  console.log('\n=== Test 3: Get workflow by ID ===');
+  console.log('\n=== Test 3: Get workflow by ID');
   const response = await fetch(`http://localhost:4000/api/workflows/${workflowId}`, {
     headers: { 
       'Authorization': `Bearer ${token}`
@@ -56,7 +56,7 @@ const testGetWorkflowById = async (token, workflowId) => {
 };
 
 const testCreateWorkflowWithoutToken = async () => {
-  console.log('\n=== Test 4: Try to create workflow WITHOUT token ===');
+  console.log('\nTest 4: Try to create workflow WITHOUT token');
   const response = await fetch('http://localhost:4000/api/workflows', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -70,7 +70,7 @@ const testCreateWorkflowWithoutToken = async () => {
 };
 
 const testDeleteWorkflow = async (token, workflowId) => {
-  console.log('\n=== Test 5: Delete workflow ===');
+  console.log('\nTest 5: Delete workflow');
   const response = await fetch(`http://localhost:4000/api/workflows/${workflowId}`, {
     method: 'DELETE',
     headers: { 

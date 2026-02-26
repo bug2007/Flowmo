@@ -1,26 +1,36 @@
-import { useState, useEffect } from 'react';  // to keep track of things that change on the screen
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 
 export default function Dashboard() {
-  const [workflows, setWorkflows] = useState([]);   // to store the list of workflows
-  const [loading, setLoading] = useState(true);   // A true/false switch. If true, it shows a "Loading..." message.
+  const [workflows, setWorkflows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [newWorkflowName, setNewWorkflowName] = useState(''); // to store the name of the new workflow being created. Keeps track of what the user is currently typing in the input box
+  const [newWorkflowName, setNewWorkflowName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [executing, setExecuting] = useState({});  // Track which workflows are executing
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const token = localStorage.getItem('token');    // "VIP Pass." It’s a secret string stored in browser memory (localStorage) that proves to the backend that you are logged in.
+  const token = localStorage.getItem('token');
 
-  // Fetch workflows on component mount
-  useEffect(() => {     // This says: "As soon as this component shows up on the screen, run the fetchWorkflows function immediately."
-    fetchWorkflows();  
-  }, []);    // empty array means "run only once when component mounts". Runs after the first render. Doesnt run again on re-renders so that data isnt fetched on every render. component re-renders happen when states or props change.
+  // Fetch workflows on component mount and auto-refresh
+  useEffect(() => {
+    fetchWorkflows();
+    
+    // Only auto-refresh when NOT creating a workflow
+    if (!creating && !newWorkflowName) {
+      const interval = setInterval(() => {
+        fetchWorkflows();
+      }, 3000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [creating, newWorkflowName]);
 
   const fetchWorkflows = async () => {
     try {
-      setLoading(true);
+      if (loading) setLoading(true);  // Only show loading on first fetch
       const data = await api.getWorkflows(token);
       if (data.workflows) {
         setWorkflows(data.workflows);
@@ -32,7 +42,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleCreateWorkflow = async (e) => {  // when we click 'Create', it sends the new workflow name to the backend. If the backend says "OK," it adds that new item to the list on our screen without refreshing the page.
+  const handleCreateWorkflow = async (e) => {
     e.preventDefault();
     if (!newWorkflowName.trim()) return;
 
@@ -54,8 +64,26 @@ export default function Dashboard() {
     }
   };
 
+  const handleExecuteWorkflow = async (workflowId) => {
+    try {
+      setExecuting({ ...executing, [workflowId]: true });
+      setError('');
+      
+      const data = await api.executeWorkflow(token, workflowId);
+      
+      if (data.message) {
+        alert('Workflow execution started!');
+        fetchWorkflows();  // Refresh to show updated status
+      }
+    } catch (err) {
+      setError('Failed to execute workflow');
+    } finally {
+      setExecuting({ ...executing, [workflowId]: false });
+    }
+  };
+
   const handleDeleteWorkflow = async (id) => {
-    if (!confirm('Are you sure you want to delete this workflow?')) return; // pops up a 'Are u sure?' box. If you say yes, it tells the backend to delete it and then removes it from the list in React's memory.
+    if (!confirm('Are you sure you want to delete this workflow?')) return;
 
     try {
       await api.deleteWorkflow(token, id);
@@ -65,10 +93,20 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = () => {         // removes your token from frontend local storage and navigates u back to the login page, alright, but token is still valid on backend until its characters r changed or it expires - meaning, that token can still be used to call protected apis. 
+  const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'text-green-600 bg-green-50';
+      case 'failed': return 'text-red-600 bg-red-50';
+      case 'running': return 'text-blue-600 bg-blue-50';
+      case 'draft': return 'text-gray-600 bg-gray-50';
+      default: return 'text-gray-600 bg-gray-50';
+    }
   };
 
   if (loading) {
@@ -86,7 +124,13 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Flowmo Dashboard</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Welcome, {user.name}</span>  {/* earlier we did: const user = JSON.parse(localStorage.getItem('user') || '{}');} */} 
+            <button
+              onClick={() => navigate('/tasks')}
+              className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800"
+            >
+              View All Tasks
+            </button>
+            <span className="text-sm text-gray-600">Welcome, {user.name}</span>
             <button
               onClick={handleLogout}
               className="px-4 py-2 text-sm text-red-600 hover:text-red-800"
@@ -138,15 +182,27 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="divide-y">
-              {workflows.map((workflow) => (  // loops thru each workflow in the workflows array and displays it on the screen. this is how the worlfows array look like: workflows = [{ id: 1, name: "My Workflow", ... }]
+              {workflows.map((workflow) => (
                 <div key={workflow.id} className="p-4 flex justify-between items-center hover:bg-gray-50">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{workflow.name}</h3>  {/* displaying each workflow on the screen */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-gray-900">{workflow.name}</h3>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(workflow.status || 'draft')}`}>
+                        {workflow.status || 'draft'}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-500">
                       Created: {new Date(workflow.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => handleExecuteWorkflow(workflow.id)}
+                      disabled={executing[workflow.id] || workflow.status === 'running'}
+                      className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded disabled:bg-gray-400"
+                    >
+                      {executing[workflow.id] ? 'Executing...' : 'Execute'}
+                    </button>
                     <button
                       onClick={() => navigate(`/workflows/${workflow.id}`)}
                       className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800"
@@ -169,3 +225,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

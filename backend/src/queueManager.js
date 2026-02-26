@@ -1,11 +1,16 @@
 const Queue = require('bull'); // Bull is a job queue system for Node.js. It uses Redis in the background to store and manage jobs.
 
+// Support both local Redis and Upstash Redis (production)
+const redisConfig = process.env.REDIS_URL?.startsWith('rediss://') 
+  ? process.env.REDIS_URL  // Upstash Redis URL (production)
+  : {
+      // Local Redis (development)
+      host: '127.0.0.1',
+      port: 6379,
+    };
+
 // Create a queue for task execution. queue name is task-execution.
-const taskQueue = new Queue('task-execution', {  
-  redis: {               // tells Bull where reddis is running
-    host: '127.0.0.1',
-    port: 6379,
-  },
+const taskQueue = new Queue('task-execution', redisConfig, {   // tells bull where redis is running
   defaultJobOptions: {
     attempts: 3, // Retry failed tasks upto 3 times
     backoff: {
@@ -33,9 +38,32 @@ taskQueue.on('active', (job) => {   // Runs when a worker starts working on a jo
 // Function to add a task to the queue
 async function addTaskToQueue(taskData) {
   try {
+
+    //DEBUG LOGS
+    console.log('Adding to queue:', {
+      taskId: taskData.id,
+      scheduled_for: taskData.scheduled_for,
+      scheduledForType: typeof taskData.scheduled_for,
+      currentTime: new Date().toISOString()
+    });
+    
+    let delay = 0;
+    if (taskData.scheduled_for) {
+      const scheduledTime = new Date(taskData.scheduled_for);
+      const now = new Date();
+      delay = scheduledTime - now;
+      
+      console.log('Delay calculation:', {
+        scheduledTime: scheduledTime.toISOString(),
+        now: now.toISOString(),
+        delayMs: delay,
+        delaySec: (delay / 1000).toFixed(1)
+      });
+    }
+
     const job = await taskQueue.add(taskData, {   // Adds a job to taskQueue. job contains bull-generated job ID, job.data (taskData), job.opts (priority, delay, attempts etc.), job.queue (reference to the queue), job.timestamp (when it was added)
       priority: taskData.priority || 10, // Lower number = higher priority
-      delay: taskData.scheduledFor ? new Date(taskData.scheduledFor) - new Date() : 0,
+      delay: delay,
     });
     
     console.log(`Task ${taskData.id} added to queue with job ID: ${job.id}`);

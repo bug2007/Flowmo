@@ -7,6 +7,7 @@
 const axios = require('axios');                // A library for making HTTP requests (API calls). easier than fetch & automatically converts JSON.
 const nodemailer = require('nodemailer');     // A library for sending emails.
 const fs = require('fs').promises;         // The File System module (using Promises) for interacting with (reading/writing) files.
+const fsSync = require('fs');
 const path = require('path');              // A utility for handling and transforming file paths.
 const archiver = require('archiver');     // A streaming library for creating archives (like ZIP files).
 const unzipper = require('unzipper');     // A library used to extract/decompress ZIP files.
@@ -90,19 +91,21 @@ class TaskExecutor {
     }
   }
 
-  // Execute File Task (compress/decompress)
+  // Execute File Task (compress/decompress/save_csv)
   async executeFileTask(config) {
     try {
-      const { operation, filePath, outputPath } = config;
+      const { operation, filePath, outputPath, data } = config;
       
       if (operation === 'compress') {
-        return await this.compressFile(filePath, outputPath);   // zip the file
+        return await this.compressFile(filePath, outputPath);
       } else if (operation === 'decompress') {
         return await this.decompressFile(filePath, outputPath);
+      } else if (operation === 'save_csv') {
+        return await this.saveAsCSV(data, outputPath);
       } else {
         return {
           success: false,
-          error: 'Invalid operation. Use "compress" or "decompress"'
+          error: 'Invalid operation. Use "compress", "decompress", or "save_csv"'
         };
       }
     } catch (error) {
@@ -115,7 +118,7 @@ class TaskExecutor {
 
   async compressFile(filePath, outputPath) {    // filePath: where the original file is, outputPath: where the zip file will be saved.
     return new Promise((resolve, reject) => {           // Promise: i promise i'll call u back when im finished. resolve = 'im done'. reject = 'something broke'.
-      const output = fs.createWriteStream(outputPath);       // create an empty file at outputPath. opens a pipe to write data into it little by little.
+      const output = fsSync.createWriteStream(outputPath);       // create an empty file at outputPath. opens a pipe to write data into it little by little.
       const archive = archiver('zip', { zlib: { level: 9 } });    // archiever = tool that creates zip files. 'zip' = zip format. 'level: 9' = max compression.  "Prepare a machine that knows how to zip files"
       
       output.on('close', () => {   // runs after the zip file is fully written. 'file is closed. zipping is done'
@@ -144,7 +147,7 @@ class TaskExecutor {
 
   async decompressFile(filePath, outputPath) { // filepath: zip file. outputPath: folder where files will be extracted.
     try {
-      await fs.createReadStream(filePath)   // open zip file. read it piece by piece.
+      await fsSync.createReadStream(filePath)   // open zip file. read it piece by piece.
         .pipe(unzipper.Extract({ path: outputPath }))   // Files get extracted as data flows. zip file --> unzipper --> output folder
         .promise(); // unzipper returns a Promise that resolves when extraction is complete.
        
@@ -156,6 +159,44 @@ class TaskExecutor {
         }
       };
     } catch (error) {  // error response if extraction fails
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async saveAsCSV(data, outputPath) {
+    try {
+      const { parse } = require('json2csv');
+      
+      if (!data || !Array.isArray(data)) {
+        throw new Error('Data must be an array of objects');
+      }
+      
+      if (data.length === 0) {
+        throw new Error('Data array is empty');
+      }
+      
+      // Create directory if it doesn't exist
+      const dir = path.dirname(outputPath);
+      await fs.mkdir(dir, { recursive: true });
+
+      // Convert JSON to CSV
+      const csv = parse(data);
+
+      // Write to file
+      await fs.writeFile(outputPath, csv, 'utf-8');
+      
+      return {
+        success: true,
+        result: {
+          csvPath: outputPath,
+          recordCount: data.length,
+          operation: 'save_csv'
+        }
+      };
+    } catch (error) {
       return {
         success: false,
         error: error.message
@@ -260,3 +301,4 @@ class TaskExecutor {
 }
 
 module.exports = new TaskExecutor();
+
