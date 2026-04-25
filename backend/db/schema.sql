@@ -67,3 +67,4 @@ COMMENT ON COLUMN tasks.worker_id IS 'ID of the worker that processed this task 
 
 ALTER TABLE tasks 
 ALTER COLUMN scheduled_for TYPE TIMESTAMP WITH TIME ZONE;
+

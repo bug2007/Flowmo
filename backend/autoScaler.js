@@ -90,7 +90,7 @@ async function checkAndScale() {
     // Decide target worker count
     let targetWorkers = currentWorkers; // by default, keep current no. of workers
 
-    if (waiting > CONFIG.scaleUpThreshold && currentWorkers < CONFIG.maxWorkers) { // check if more than 5 tasks are waiting and if we are allowed to add more workers (not exceeding max)
+    if (waiting > CONFIG.scaleUpThreshold && currentWorkers < CONFIG.maxWorkers) { // check if more than 3 tasks are waiting and if we are allowed to add more workers (not exceeding max)
       // Queue is growing - scale up
       targetWorkers = Math.min(
         CONFIG.maxWorkers,

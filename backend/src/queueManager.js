@@ -1,16 +1,16 @@
 const Queue = require('bull'); // Bull is a job queue system for Node.js. It uses Redis in the background to store and manage jobs.
 
 // Support both local Redis and Upstash Redis (production)
-const redisConfig = process.env.REDIS_URL?.startsWith('rediss://') 
-  ? process.env.REDIS_URL  // Upstash Redis URL (production)
-  : {
-      // Local Redis (development)
-      host: '127.0.0.1',
-      port: 6379,
-    };
+// const redisConfig = process.env.REDIS_URL?.startsWith('rediss://') 
+//   ? process.env.REDIS_URL  // Upstash Redis URL (production)
+//   : {
+//       // Local Redis (development)
+//       host: '127.0.0.1',
+//       port: 6379,
+//     };
 
 // Create a queue for task execution. queue name is task-execution.
-const taskQueue = new Queue('task-execution', redisConfig, {   // tells bull where redis is running
+const taskQueue = new Queue('task-execution', process.env.REDIS_URL, {   // tells bull where redis is running
   defaultJobOptions: {
     attempts: 3, // Retry failed tasks upto 3 times
     backoff: {

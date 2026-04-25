@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -44,6 +45,6 @@ app.get('/db-test', async (req, res) => { // async allows using await for the da
   }
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;  // because render assigns its own port
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
